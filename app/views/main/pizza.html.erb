@@ -1,0 +1,114 @@
+<h2>Create your order</h2>
+
+<% @pizza.each do |pizza| %>
+    <%= pizza.name%> <%= pizza.price.to_s %> $
+  <div style="display: inline; padding: 5px">
+    <button type="button" onclick="funcMinus('<%= pizza.name %>')">-</button>
+    <label id="<%= pizza.name %>" style="padding: 8px">0</label>
+    <button type="button" onclick="funcPlus('<%= pizza.name %>')">+</button>
+  </div>
+  <button type="button" onclick="countPrice('<%= pizza.name %>', '<%= pizza.price %>')">Add pizza</button>
+  <br>
+  <br>
+<% end %>
+
+<ul id="cart-items"></ul>
+
+<div style="padding-bottom: 5px">
+Your order total price: <label id="total-label">0</label>
+</div>
+
+<button onclick="sendJSON()">Save order</button>
+
+<script>
+    function funcPlus(val) {
+        var counterVal = document.getElementById(val).innerText;
+        counterVal++;
+        document.getElementById(val).innerText = counterVal;
+    }
+    function funcMinus(val) {
+        var counterVal = document.getElementById(val).innerText;
+        if(counterVal > 0) {
+            counterVal--;
+            document.getElementById(val).innerText = counterVal;
+        }
+    }
+
+    function updateDisplay(id,val) {
+        document.getElementById(id).innerHTML = val;
+    }
+
+    function countPrice(name, price){
+        const amount = document.getElementById(name).innerHTML;
+        var total
+        if (amount > 0) {
+            var innerText = document.getElementById("cart-items").innerHTML
+            if (innerText.includes(name)) {
+                var str = document.getElementById("cart-item-".concat(name)).innerHTML
+                var oldAmount = parseFloat(str.match(/-?(?:\d+(?:\.\d*)?|\.\d+)/)[0])
+                const element = `
+                    <div>
+                        <label class="item-name">${name}</label><label class="item-amount"> ${amount}</label>
+                    </div>
+                `;
+                document.getElementById("cart-item-".concat(name)).innerHTML = element
+                total = parseFloat(price)*(parseFloat(amount) - parseFloat(oldAmount)) + parseFloat(document.getElementById("total-label").innerText)
+                updateDisplay("total-label", total);
+            } else {
+                const element = `
+                <li id="cart-item-${name}">
+                    <div>
+                        <label class="item-name">${name}</label><label class="item-amount"> ${amount}</label>
+                    </div>
+                </li>
+                `;
+                document.getElementById("cart-items").innerHTML = document.getElementById("cart-items").innerHTML.concat(element);
+                total = parseFloat(price)*parseFloat(amount) + parseFloat(document.getElementById("total-label").innerText)
+                updateDisplay("total-label", total);
+            }
+        } else {
+            if (document.getElementById("cart-item-".concat(name)) != null) {
+                var str = document.getElementById("cart-item-".concat(name)).innerHTML
+                var oldAmount = parseFloat(str.match(/-?(?:\d+(?:\.\d*)?|\.\d+)/)[0])
+                innerText = document.getElementById("cart-items").innerHTML
+                if (innerText.includes(name)) {
+                    document.getElementById("cart-item-".concat(name)).remove()
+                    total = parseFloat(document.getElementById("total-label").innerText) - parseFloat(price) * parseFloat(oldAmount)
+                    updateDisplay("total-label", total);
+                }
+            }
+        }
+    }
+</script>
+
+<script>
+    function sendJSON() {
+        let itemsName = Array.from(document.getElementsByClassName("item-name"));
+        let itemsAmount = Array.from(document.getElementsByClassName("item-amount"));
+        if (itemsName.length > 0) {
+            let names_arr = [];
+            for (let i = 0; i < itemsName.length; i++) {
+                names_arr.push(itemsName[i].textContent.trim());
+            }
+            let amount_arr = [];
+            for (let i = 0; i < itemsAmount.length; i++) {
+                amount_arr.push(itemsAmount[i].textContent.trim());
+            }
+            let xhr = new XMLHttpRequest();
+            let url = "./order";
+            xhr.open("POST", url, true);
+            // устанавливаем заголовок — выбираем тип контента, который отправится на сервер, в нашем случае мы явно пишем, что это JSON
+            xhr.setRequestHeader("Content-Type", "application/json");
+            // когда придёт ответ на наше обращение к серверу, мы его обработаем здесь
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    console.log(this.responseText);
+                }
+            };
+            // преобразуем наши данные JSON в строку
+            let data = JSON.stringify({names: names_arr, amount: amount_arr});
+            console.log(data)
+            xhr.send(data);
+        }
+    }
+</script>

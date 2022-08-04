@@ -1,0 +1,14 @@
+<h2>Order list</h2>
+
+<% @orders.each do |order| %>
+  <% order.items.each do |item| %>
+    <%= item.pizza_type.name%> <%= item.quantity.to_s %>
+    <br>
+  <% end %>
+
+  <p>
+    Total price: <%= order.total %>
+  </p>
+  <hr>
+<% end %>
+
